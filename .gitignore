@@ -2,4 +2,3 @@ __pycache__/
 data/state/
 dashboard/node_modules/
 dashboard/dist/
-dashboard/public/data/dashboard.json

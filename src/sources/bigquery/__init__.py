@@ -1,0 +1,1 @@
+"""BigQuery source adapter utilities."""

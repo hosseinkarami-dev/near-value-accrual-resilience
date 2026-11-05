@@ -1,0 +1,74 @@
+{
+  "dataset": "near_all_time_metrics",
+  "unit": "mixed",
+  "methodology": "Cumulative flow metrics and current stock snapshots are grouped by source domain.",
+  "near_intents": {
+    "near_intents_dex_volume": {
+      "value": 36530531433,
+      "unit": "USD",
+      "source": "DeFiLlama",
+      "source_endpoint": "https://api.llama.fi/summary/dexs/near-intents",
+      "methodology": "Provider lifetime total or the sum of the provider's complete daily chart.",
+      "updated_at": "2026-11-05T20:07:47.912584Z"
+    },
+    "near_intents_gross_fees": {
+      "value": 58830286.980000004,
+      "unit": "USD",
+      "source": "DeFiLlama",
+      "source_endpoint": "https://api.llama.fi/summary/fees/near-intents?dataType=dailyFees",
+      "methodology": "Provider lifetime total or the sum of the provider's complete daily chart.",
+      "updated_at": "2026-11-05T20:07:51.298025Z"
+    },
+    "near_intents_net_revenue": {
+      "value": 9439089.05,
+      "unit": "USD",
+      "source": "DeFiLlama",
+      "source_endpoint": "https://api.llama.fi/summary/fees/near-intents?dataType=dailyRevenue",
+      "methodology": "Provider lifetime total or the sum of the provider's complete daily chart.",
+      "updated_at": "2026-11-05T20:07:55.174565Z"
+    },
+    "near_intents_holders_revenue_buyback": {
+      "value": 7668858.05,
+      "unit": "USD",
+      "source": "DeFiLlama",
+      "source_endpoint": "https://api.llama.fi/summary/fees/near-intents?dataType=dailyHoldersRevenue",
+      "methodology": "Provider lifetime total or the sum of the provider's complete daily chart.",
+      "updated_at": "2026-11-05T20:07:59.465326Z"
+    }
+  },
+  "network": {
+    "near_network_dex_volume": {
+      "value": 62132534487.090004,
+      "unit": "USD",
+      "source": "DeFiLlama",
+      "source_endpoint": "https://api.llama.fi/overview/dexs/Near",
+      "methodology": "Provider lifetime total, refreshed independently from the daily history.",
+      "updated_at": "2026-11-05T20:10:41.190659Z"
+    },
+    "near_network_fees": {
+      "value": 88942049.04,
+      "unit": "USD",
+      "source": "DeFiLlama",
+      "source_endpoint": "https://api.llama.fi/overview/fees/Near?dataType=dailyFees",
+      "methodology": "Provider lifetime total, refreshed independently from the daily history.",
+      "updated_at": "2026-11-05T20:10:42.782948Z"
+    },
+    "current_chain_tvl": {
+      "value": 173626236.91951734,
+      "unit": "USD",
+      "source": "DeFiLlama",
+      "source_endpoint": "https://api.llama.fi/v2/chains",
+      "methodology": "Current TVL snapshot for the NEAR chain; stock value, not a cumulative flow.",
+      "updated_at": "2026-11-05T20:10:44.642417Z"
+    },
+    "current_stablecoin_supply": {
+      "value": 129698651.90716128,
+      "unit": "USD",
+      "source": "DeFiLlama",
+      "source_endpoint": "https://stablecoins.llama.fi/stablecoinchains",
+      "methodology": "Current aggregate USD value of circulating stablecoins on NEAR.",
+      "updated_at": "2026-11-05T20:10:46.254768Z"
+    }
+  },
+  "updated_at": "2026-11-05T20:10:46.254768Z"
+}

@@ -12,7 +12,7 @@ class DatasetContract:
 
 
 DATASETS = {
-    "near_daily_price": DatasetContract("near_daily_price", "network/daily_price.json", "Binance Spot", "USDT"),
+    "near_daily_price": DatasetContract("near_daily_price", "network/daily_token_price.json", "Binance Spot", "USDT"),
     "near_daily_total_supply": DatasetContract("near_daily_total_supply", "network/daily_total_supply.json", "BigQuery", "NEAR"),
     "near_daily_user_activity_cohorts": DatasetContract("near_daily_user_activity_cohorts", "network/daily_user_activity_cohorts.json", "BigQuery", "mixed"),
     "near_intents_tvl": DatasetContract("near_intents_tvl", "near_intents/historical_tvl.json", "DeFiLlama", "USD", "series"),

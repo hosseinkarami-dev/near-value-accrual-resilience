@@ -23,7 +23,7 @@ To run one dataset on its own, use its provider folder directly, for example:
 - `python scripts/sources/bigquery/user_activity_cohorts.py` refreshes the transaction, user, and cohort dataset. `update_all.py --source bigquery` runs this alongside daily supply.
 - The cohort updater bootstraps its selected date window once (default starts `2025-05-10`), saves first-activity state under `data/state/`, and then re-queries only the latest date with a two-day overlap. It filters on `block_date` and replaces overlapping JSON rows instead of duplicating them.
 
-DeFiLlama historical files are grouped under `data/near_intents/` and `data/network/`; cumulative and current snapshot values share `data/all_time_metrics.json`. Historical updates begin at `latest stored date + 1` (or `2025-05-10` for a first run) and stop before the current UTC date. Some free DeFiLlama endpoints return the full chart even when date parameters are supplied; those responses are filtered locally and existing dates are preserved. Current snapshots and cumulative values are refreshed each run. A failed retrieval leaves the last successful dataset intact.
+DeFiLlama historical files are grouped under `data/near_intents/` and `data/network/`; cumulative and current snapshot values share `data/all_time_metrics.json`. Historical updates begin at `latest stored date + 1` (or `2025-05-10` for a first run) and stop before the current UTC date. Some free DeFiLlama endpoints return the full chart even when date parameters are supplied; those responses are filtered locally and existing dates are preserved. Current snapshots and cumulative values are refreshed each run. Binance daily candles are saved to `data/network/daily_token_price.json`, starting from the latest stored date + 1, and its live ticker is written to `data/all_time_metrics.json`. A failed retrieval leaves the last successful dataset intact.
 
 ## Architecture
 
@@ -40,6 +40,22 @@ The data path is **source adapter → normalizer → dataset pipeline → storag
 - `data/all_time_metrics.json` contains cumulative flow values and current network snapshots.
 
 Binance, DeFiLlama, and BigQuery have working adapters. The RPC folder is an extension point only; an RPC source and its dataset still need to be specified and implemented.
+
+## Static dashboard
+
+The standalone Vite application lives in `dashboard/`; dashboard-specific data preparation lives in `dashboard-data/`. The preparation script reads normalized local JSON files only and makes no API or BigQuery requests. For now it includes only DeFiLlama datasets; other sources can be added when their datasets are ready.
+
+From the repository root, install and launch the dashboard with:
+
+```powershell
+cd dashboard
+npm install
+npm run dev
+```
+
+`npm run dev` and `npm run build` prepare `dashboard/public/data/dashboard.json` first. To create the static production bundle, run `npm run build`, then serve `dashboard/dist/` from any static web host.
+
+Daily observations remain available as-is. Weekly and monthly flow metrics (such as DEX volume and fees) are summed within each period. Stock metrics (such as TVL and stablecoin supply) use the last available observation in that period; they are never summed. Lifetime totals and current snapshots are presented separately from historical series.
 
 ## Data rules
 

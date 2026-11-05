@@ -5,7 +5,7 @@ from src.storage.json_store import DATA_DIR, load_json, write_json
 ALL_TIME_PATH = DATA_DIR / "all_time_metrics.json"
 
 
-def save_metric(section, key, value, unit, endpoint, methodology):
+def save_metric(section, key, value, unit, endpoint, methodology, source="DeFiLlama"):
     if value is None:
         return
     document = load_json(ALL_TIME_PATH, {
@@ -18,7 +18,7 @@ def save_metric(section, key, value, unit, endpoint, methodology):
     document.setdefault(section, {})[key] = {
         "value": value,
         "unit": unit,
-        "source": "DeFiLlama",
+        "source": source,
         "source_endpoint": endpoint,
         "methodology": methodology,
         "updated_at": iso_now(),

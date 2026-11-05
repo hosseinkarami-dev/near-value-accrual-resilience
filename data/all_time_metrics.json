@@ -68,7 +68,15 @@
       "source_endpoint": "https://stablecoins.llama.fi/stablecoinchains",
       "methodology": "Current aggregate USD value of circulating stablecoins on NEAR.",
       "updated_at": "2026-11-05T20:10:46.254768Z"
+    },
+    "current_token_price": {
+      "value": 3.71700000,
+      "unit": "USDT",
+      "source": "Binance Spot",
+      "source_endpoint": "https://data-api.binance.vision/api/v3/ticker/price?symbol=NEARUSDT",
+      "methodology": "Latest Binance Spot ticker price for NEAR/USDT; a live snapshot, not a daily candle close.",
+      "updated_at": "2026-11-05T20:46:01.403389Z"
     }
   },
-  "updated_at": "2026-11-05T20:10:46.254768Z"
+  "updated_at": "2026-11-05T20:46:01.403389Z"
 }

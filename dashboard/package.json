@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "prepare:data": "python ../dashboard-data/build.py",
+    "prepare:data": "py ../dashboard-data/build.py",
     "predev": "npm run prepare:data",
     "dev": "vite",
     "prebuild": "npm run prepare:data",

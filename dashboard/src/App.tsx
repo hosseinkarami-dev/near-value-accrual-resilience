@@ -420,7 +420,7 @@ function App() {
             </div>
           </section>
 
-          {error && <div className="error-banner"><Database size={17} /><div><strong>Dashboard data is not ready.</strong><span>{error} Run <code>python ../dashboard-data/build.py</code> from the dashboard directory.</span></div></div>}
+          {error && <div className="error-banner"><Database size={17} /><div><strong>Dashboard data is not ready.</strong><span>{error} Run <code>py ../dashboard-data/build.py</code> from the dashboard directory.</span></div></div>}
           {data && renderTab()}
 
           <footer className="page-footer"><span>Source: DeFiLlama · Daily observations</span><span>Weekly/monthly flows are summed; stock metrics use the last observation in each period.</span></footer>

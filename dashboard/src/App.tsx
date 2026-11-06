@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Activity, ArrowDownRight, ArrowUpRight, BarChart3, ChevronDown,
   CircleDollarSign, Clock3, Coins, Database, Gauge, Layers3,
-  Menu, RefreshCw, ShieldCheck, Sparkles, X,
+  Menu, RefreshCw, Sparkles, X,
   type LucideIcon,
 } from 'lucide-react'
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 
@@ -19,8 +19,9 @@ type Metric = {
 type AllTimeMetric = { value: number; unit: string; source: string; updated_at: string; methodology?: string }
 type DashboardData = {
   schema_version: number; generated_at: string; source_scope: string;
-  all_time: Record<string, AllTimeMetric>; series: Record<string, Metric>
+  all_time: Record<string, AllTimeMetric>; series: Record<string, Metric>; app_fees?: AppFeeSeries[]
 }
+type AppFeeSeries = { id: string; name: string; daily: Point[]; weekly: Point[]; monthly: Point[] }
 
 type TabId = 'overview' | 'market' | 'fees' | 'daily-revenue' | 'intents'
 type Interval = 'daily' | 'weekly' | 'monthly'
@@ -181,6 +182,30 @@ function ChartPanel({
   )
 }
 
+const feePalette = ['#16B98A', '#6677E8', '#F0A52B', '#E477A8', '#22A5D9', '#8B75E8', '#58A77A', '#E88066']
+
+function FeeSharePanel({ data, total, subtitle }: { data: { name: string; value: number }[]; total: number; subtitle: string }) {
+  return (
+    <section className="chart-panel surface-card fee-share-panel">
+      <div className="panel-heading"><div><h3>App fee share</h3><p>{subtitle}</p></div><span className="tiny-status"><span />BY APP</span></div>
+      {data.length ? <>
+        <div className="fee-pie-wrap">
+          <div className="fee-pie-total"><strong>{money(total)}</strong><span>Selected period</span></div>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={data} dataKey="value" nameKey="name" innerRadius={76} outerRadius={108} paddingAngle={2} stroke="none">
+                {data.map((item, index) => <Cell key={item.name} fill={feePalette[index % feePalette.length]} />)}
+              </Pie>
+              <Tooltip formatter={(value) => money(Number(value), true)} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="fee-share-legend">{data.map((item, index) => <div key={item.name}><i style={{ background: feePalette[index % feePalette.length] }} /><span>{item.name}</span><strong>{money(item.value)}</strong></div>)}</div>
+      </> : <div className="empty-chart"><Database size={20} /><span>App-level fee history is not available yet. Refresh DeFiLlama data to populate it.</span></div>}
+    </section>
+  )
+}
+
 function SummaryPanel({ title, subtitle, metrics, data }: { title: string; subtitle: string; metrics: string[]; data: DashboardData }) {
   return (
     <section className="summary-panel surface-card">
@@ -201,7 +226,7 @@ function prettyMetricName(id: string) {
     near_network_dex_volume: 'NEAR DEX volume', near_network_fees: 'NEAR network fees',
     near_intents_dex_volume: 'NEAR Intents DEX volume', near_intents_gross_fees: 'NEAR Intents gross fees',
     near_intents_net_revenue: 'NEAR Intents net revenue', near_intents_holders_revenue_buyback: 'NEAR Intents holders revenue',
-    current_chain_tvl: 'Current chain TVL', current_stablecoin_supply: 'Current stablecoin supply',
+    current_chain_tvl: 'Current chain TVL', current_stablecoin_supply: 'Current stablecoin market cap',
   }
   return names[id] ?? id.replaceAll('_', ' ')
 }
@@ -252,6 +277,37 @@ function App() {
   if (loading && !data) return <DataUnavailable />
 
   const chartRows = (id: string) => getPoints(data, id, interval, range)
+  const feeApps = (data?.app_fees ?? []).map((app) => {
+    const cutoff = range === 'ALL' || !anchorDate ? undefined : (() => {
+      const day = new Date(`${anchorDate}T00:00:00Z`)
+      day.setUTCDate(day.getUTCDate() - (range === '30D' ? 30 : range === '90D' ? 90 : 365) + 1)
+      return day.toISOString().slice(0, 10)
+    })()
+    const points = app[interval].filter((point) => !cutoff || point.date >= cutoff)
+    return { ...app, points, total: points.reduce((sum, point) => sum + point.value, 0) }
+  }).filter((app) => app.total > 0).sort((a, b) => b.total - a.total)
+  const featuredFeeApps = feeApps.slice(0, 6).map((app, index) => ({ ...app, key: `app_${index}` }))
+  const otherFeeApps = feeApps.slice(6)
+  const feeChartDates = [...new Set(feeApps.flatMap((app) => app.points.map((point) => point.date)))].sort()
+  const feeLineRows = feeChartDates.map((date) => {
+    const row: Record<string, string | number | null> = { date }
+    for (const app of featuredFeeApps) {
+      row[app.key] = app.points.find((point) => point.date === date)?.value ?? null
+    }
+    if (otherFeeApps.length) {
+      row.other_apps = otherFeeApps.reduce((sum, app) => sum + (app.points.find((point) => point.date === date)?.value ?? 0), 0)
+    }
+    return row as Point & Record<string, string | number | null>
+  })
+  const feeLines = [
+    ...featuredFeeApps.map((app, index) => ({ key: app.key, label: app.name, color: feePalette[index % feePalette.length] })),
+    ...(otherFeeApps.length ? [{ key: 'other_apps', label: 'Other apps', color: '#A3ACB9' }] : []),
+  ]
+  const feeShareRows = [
+    ...featuredFeeApps.map((app) => ({ name: app.name, value: app.total })),
+    ...(otherFeeApps.length ? [{ name: 'Other apps', value: otherFeeApps.reduce((sum, app) => sum + app.total, 0) }] : []),
+  ]
+  const totalAppFees = feeApps.reduce((sum, app) => sum + app.total, 0)
   const metricRows = (ids: string[]) => {
     const maps = ids.map((id) => new Map(chartRows(id).map((point) => [point.date, point.value])))
     const dates = [...new Set(maps.flatMap((map) => [...map.keys()]))].sort()
@@ -262,7 +318,7 @@ function App() {
     <>
       <div className="kpi-grid">
         <KpiCard label="NEAR chain TVL" value={money(currentTvl)} caption="Current DeFi value locked" icon={Layers3} accent="mint" />
-        <KpiCard label="Stablecoin supply" value={money(currentStablecoins)} caption="Current circulating value" icon={Coins} accent="blue" />
+        <KpiCard label="Stablecoin market cap" value={money(currentStablecoins)} caption="Current value of circulating stablecoins" icon={Coins} accent="blue" />
         <KpiCard label="NEAR DEX volume" value={money(windowVolume)} caption={currentRangeLabel} icon={BarChart3} accent="violet" delta={deltaValue(data, 'network_dex_volume', interval, range)} />
         <KpiCard label="Network fees" value={money(windowFees)} caption={currentRangeLabel} icon={CircleDollarSign} accent="amber" delta={deltaValue(data, 'network_fees', interval, range)} />
       </div>
@@ -272,7 +328,7 @@ function App() {
       </div>
       <div className="chart-grid two-columns lower-grid">
         <ChartPanel title="Network fees" subtitle="Fees paid by users across tracked NEAR protocols" data={chartRows('network_fees')} lines={[{ key: 'value', label: 'Network fees', color: '#F59E0B' }]} interval={interval} variant="bar" />
-        <ChartPanel title="Stablecoin supply" subtitle="Aggregate circulating stablecoin value" data={chartRows('stablecoin_supply')} lines={[{ key: 'value', label: 'Stablecoin supply', color: '#22A5D9' }]} interval={interval} variant="area" footer="Stock metric · last observation in each period" />
+        <ChartPanel title="Stablecoin market cap" subtitle="Aggregate USD value of circulating stablecoins" data={chartRows('stablecoin_supply')} lines={[{ key: 'value', label: 'Market cap', color: '#22A5D9' }]} interval={interval} variant="area" footer="Stock metric · last observation in each period" />
       </div>
       {data && <SummaryPanel title="Lifetime network activity" subtitle="Cumulative flow totals reported by DeFiLlama" metrics={['near_network_dex_volume', 'near_network_fees']} data={data} />}
     </>
@@ -282,7 +338,7 @@ function App() {
     <>
       <div className="kpi-grid compact-kpis">
         <KpiCard label="Latest DEX volume" value={money(windowVolume)} caption={currentRangeLabel} icon={BarChart3} accent="mint" />
-        <KpiCard label="Latest stablecoin supply" value={money(currentStablecoins)} caption="Current snapshot" icon={Coins} accent="blue" />
+        <KpiCard label="Stablecoin market cap" value={money(currentStablecoins)} caption="Current snapshot" icon={Coins} accent="blue" />
         <KpiCard label="NEAR Intents volume" value={money(latestValue(data, 'intents_dex_volume', interval, range))} caption={currentRangeLabel} icon={Activity} accent="violet" />
       </div>
       <div className="chart-grid two-columns">
@@ -290,7 +346,7 @@ function App() {
         <ChartPanel title="NEAR Intents DEX volume" subtitle="Protocol-level trading activity" data={chartRows('intents_dex_volume')} lines={[{ key: 'value', label: 'NEAR Intents', color: '#8B75E8' }]} interval={interval} variant="area" />
       </div>
       <div className="chart-grid two-columns lower-grid">
-        <ChartPanel title="Stablecoin supply" subtitle="USD value by observation date" data={chartRows('stablecoin_supply')} lines={[{ key: 'value', label: 'Stablecoins', color: '#22A5D9' }]} interval={interval} variant="line" footer="Stock metric · period-end observation" />
+        <ChartPanel title="Stablecoin market cap" subtitle="USD value by observation date" data={chartRows('stablecoin_supply')} lines={[{ key: 'value', label: 'Market cap', color: '#22A5D9' }]} interval={interval} variant="line" footer="Stock metric · period-end observation" />
         <ChartPanel title="NEAR network TVL" subtitle="DeFi TVL excluding double-counted value" data={chartRows('network_tvl')} lines={[{ key: 'value', label: 'TVL', color: '#6477E8' }]} interval={interval} variant="line" footer="Stock metric · period-end observation" />
       </div>
     </>
@@ -298,12 +354,15 @@ function App() {
 
   const renderFees = () => (
     <>
-      {data && <SummaryPanel title="Lifetime fees & revenue" subtitle="Values are cumulative and kept distinct by methodology" metrics={['near_network_fees', 'near_intents_gross_fees', 'near_intents_net_revenue', 'near_intents_holders_revenue_buyback']} data={data} />}
-      <div className="chart-grid two-columns lower-grid">
-        <ChartPanel title="Network fees vs. Intents gross fees" subtitle="Chain-wide fees and protocol-level fees are separate measures" data={metricRows(['network_fees', 'intents_gross_fees'])} lines={[{ key: 'network_fees', label: 'Network fees', color: '#F0A52B' }, { key: 'intents_gross_fees', label: 'Intents gross fees', color: '#16B98A' }]} interval={interval} variant="line" />
-        <ChartPanel title="NEAR Intents captured revenue" subtitle="Net revenue and holders revenue" data={metricRows(['intents_net_revenue', 'intents_holders_revenue'])} lines={[{ key: 'intents_net_revenue', label: 'Net revenue', color: '#6477E8' }, { key: 'intents_holders_revenue', label: 'Holders revenue', color: '#E88066' }]} interval={interval} variant="area" />
+      <div className="kpi-grid compact-kpis fees-kpis">
+        <KpiCard label="Total app fees" value={money(totalAppFees)} caption={`${range} · ${interval} observations`} icon={CircleDollarSign} accent="amber" />
+        <KpiCard label="Apps with fee data" value={String(feeApps.length)} caption="DeFiLlama tracked on NEAR" icon={Layers3} accent="mint" />
       </div>
-      <div className="notice-card"><ShieldCheck size={18} /><p><strong>Metric definitions stay separate.</strong> Network fees are user-paid fees across tracked NEAR protocols. NEAR Intents gross fees, net revenue, and holders revenue are distinct protocol metrics; holders revenue does not mean token burn.</p></div>
+      <div className="chart-grid two-columns lower-grid fees-chart-grid">
+        <FeeSharePanel data={feeShareRows} total={totalAppFees} subtitle={`App fee totals · ${range} selected range`} />
+        <ChartPanel title="App fees over time" subtitle={`${range === 'ALL' ? 'All available history' : `Last ${range}`} · ${interval} app fees`} data={feeLineRows} lines={feeLines} interval={interval} variant="line" height={360} footer="Top 6 apps by selected-range fees; remaining apps are grouped as Other apps." />
+      </div>
+      <div className="notice-card"><Clock3 size={18} /><p>Fee share sums each app’s daily fees across the selected range. The time series follows the selected daily, weekly, or monthly interval; weekly and monthly values are period totals.</p></div>
     </>
   )
 
